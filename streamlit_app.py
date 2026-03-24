@@ -44,6 +44,7 @@ else:
     if os.path.exists(DB_PATH) and not is_sqlite_writable(DB_PATH):
         try:
             os.remove(DB_PATH)
+            st.cache_resource.clear() # 清除 Streamlit 的連線快取，強制重連新的可寫入檔案
         except Exception:
             pass
             
