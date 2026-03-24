@@ -19,9 +19,18 @@ import tempfile
 import shutil
 
 # ── Config ───────────────────────────────────────────────────────────────
-
 LOCAL_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
 TEMP_DB_PATH = os.path.join(tempfile.gettempdir(), "aiotdb.db")
+
+# 判斷如果是唯讀環境 (例如 Streamlit Cloud)，就轉用暫存資料夾
+if os.path.exists(LOCAL_DB_PATH) and not os.access(LOCAL_DB_PATH, os.W_OK):
+    if not os.path.exists(TEMP_DB_PATH):
+        shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
+    DB_PATH = TEMP_DB_PATH
+elif not os.path.exists(LOCAL_DB_PATH) and not os.access(os.path.dirname(LOCAL_DB_PATH), os.W_OK):
+    DB_PATH = TEMP_DB_PATH
+else:
+    DB_PATH = LOCAL_DB_PATH
 
 # Streamlit Cloud mounts the GitHub repo as read-only.
 # If the local DB or directory is read-only, fallback to a temporary directory.
