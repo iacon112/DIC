@@ -39,16 +39,22 @@ def is_sqlite_writable(db_path):
 if is_sqlite_writable(LOCAL_DB_PATH):
     DB_PATH = LOCAL_DB_PATH
 else:
-    if os.path.exists(LOCAL_DB_PATH) and not os.path.exists(TEMP_DB_PATH):
+    DB_PATH = TEMP_DB_PATH
+    # 如果暫存區已經有檔案，但因為先前的錯誤導致它是唯讀的，就強制作廢它
+    if os.path.exists(DB_PATH) and not is_sqlite_writable(DB_PATH):
         try:
-            # 使用 copyfile 而不是 copy2，避免連同「唯讀權限」一起複製過去
-            shutil.copyfile(LOCAL_DB_PATH, TEMP_DB_PATH)
-            # 強制賦予讀寫權限
-            import stat
-            os.chmod(TEMP_DB_PATH, stat.S_IREAD | stat.S_IWRITE)
+            os.remove(DB_PATH)
         except Exception:
             pass
-    DB_PATH = TEMP_DB_PATH
+            
+    # 如果暫存區沒有檔案，從本機複製一份過去並確保可讀寫
+    if os.path.exists(LOCAL_DB_PATH) and not os.path.exists(DB_PATH):
+        try:
+            shutil.copyfile(LOCAL_DB_PATH, DB_PATH)
+            import stat
+            os.chmod(DB_PATH, stat.S_IREAD | stat.S_IWRITE)
+        except Exception:
+            pass
 
 st.set_page_config(
     page_title="AIoT Sensor Dashboard",
