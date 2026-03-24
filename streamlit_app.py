@@ -22,19 +22,21 @@ import shutil
 LOCAL_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
 TEMP_DB_PATH = os.path.join(tempfile.gettempdir(), "aiotdb.db")
 
-def is_writable(path):
-    """Real test to see if a directory is actually writable."""
+def is_sqlite_writable(db_path):
+    """Real test to see if SQLite can actually write to this database file."""
     try:
-        test_file = os.path.join(path, ".test_write")
-        with open(test_file, "w") as f:
-            f.write("test")
-        os.remove(test_file)
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS _test_write (id INTEGER)")
+        conn.execute("INSERT INTO _test_write (id) VALUES (1)")
+        conn.execute("DROP TABLE _test_write")
+        conn.commit()
+        conn.close()
         return True
     except Exception:
         return False
 
-# 如果本機目錄可寫入，就用本機的 db；否則 (Streamlit Cloud) 改用系統暫存區
-if is_writable(os.path.dirname(LOCAL_DB_PATH)):
+# 如果本機的 SQLite 資料庫檔可以成功寫入，就用本機的；否則 (Streamlit Cloud) 改用系統暫存區
+if is_sqlite_writable(LOCAL_DB_PATH):
     DB_PATH = LOCAL_DB_PATH
 else:
     if os.path.exists(LOCAL_DB_PATH) and not os.path.exists(TEMP_DB_PATH):
