@@ -22,26 +22,27 @@ import shutil
 LOCAL_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
 TEMP_DB_PATH = os.path.join(tempfile.gettempdir(), "aiotdb.db")
 
-# 判斷如果是唯讀環境 (例如 Streamlit Cloud)，就轉用暫存資料夾
-if os.path.exists(LOCAL_DB_PATH) and not os.access(LOCAL_DB_PATH, os.W_OK):
-    if not os.path.exists(TEMP_DB_PATH):
-        shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
-    DB_PATH = TEMP_DB_PATH
-elif not os.path.exists(LOCAL_DB_PATH) and not os.access(os.path.dirname(LOCAL_DB_PATH), os.W_OK):
-    DB_PATH = TEMP_DB_PATH
-else:
-    DB_PATH = LOCAL_DB_PATH
+def is_writable(path):
+    """Real test to see if a directory is actually writable."""
+    try:
+        test_file = os.path.join(path, ".test_write")
+        with open(test_file, "w") as f:
+            f.write("test")
+        os.remove(test_file)
+        return True
+    except Exception:
+        return False
 
-# Streamlit Cloud mounts the GitHub repo as read-only.
-# If the local DB or directory is read-only, fallback to a temporary directory.
-if os.path.exists(LOCAL_DB_PATH) and not os.access(LOCAL_DB_PATH, os.W_OK):
-    if not os.path.exists(TEMP_DB_PATH):
-        shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
-    DB_PATH = TEMP_DB_PATH
-elif not os.path.exists(LOCAL_DB_PATH) and not os.access(os.path.dirname(LOCAL_DB_PATH), os.W_OK):
-    DB_PATH = TEMP_DB_PATH
-else:
+# 如果本機目錄可寫入，就用本機的 db；否則 (Streamlit Cloud) 改用系統暫存區
+if is_writable(os.path.dirname(LOCAL_DB_PATH)):
     DB_PATH = LOCAL_DB_PATH
+else:
+    if os.path.exists(LOCAL_DB_PATH) and not os.path.exists(TEMP_DB_PATH):
+        try:
+            shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
+        except Exception:
+            pass
+    DB_PATH = TEMP_DB_PATH
 
 st.set_page_config(
     page_title="AIoT Sensor Dashboard",
