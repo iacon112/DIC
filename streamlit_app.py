@@ -41,7 +41,11 @@ if is_sqlite_writable(LOCAL_DB_PATH):
 else:
     if os.path.exists(LOCAL_DB_PATH) and not os.path.exists(TEMP_DB_PATH):
         try:
-            shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
+            # 使用 copyfile 而不是 copy2，避免連同「唯讀權限」一起複製過去
+            shutil.copyfile(LOCAL_DB_PATH, TEMP_DB_PATH)
+            # 強制賦予讀寫權限
+            import stat
+            os.chmod(TEMP_DB_PATH, stat.S_IREAD | stat.S_IWRITE)
         except Exception:
             pass
     DB_PATH = TEMP_DB_PATH
