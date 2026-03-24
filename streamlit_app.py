@@ -15,9 +15,24 @@ from datetime import datetime, timedelta
 import streamlit as st
 import pandas as pd
 
+import tempfile
+import shutil
+
 # ── Config ───────────────────────────────────────────────────────────────
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
+LOCAL_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
+TEMP_DB_PATH = os.path.join(tempfile.gettempdir(), "aiotdb.db")
+
+# Streamlit Cloud mounts the GitHub repo as read-only.
+# If the local DB or directory is read-only, fallback to a temporary directory.
+if os.path.exists(LOCAL_DB_PATH) and not os.access(LOCAL_DB_PATH, os.W_OK):
+    if not os.path.exists(TEMP_DB_PATH):
+        shutil.copy2(LOCAL_DB_PATH, TEMP_DB_PATH)
+    DB_PATH = TEMP_DB_PATH
+elif not os.path.exists(LOCAL_DB_PATH) and not os.access(os.path.dirname(LOCAL_DB_PATH), os.W_OK):
+    DB_PATH = TEMP_DB_PATH
+else:
+    DB_PATH = LOCAL_DB_PATH
 
 st.set_page_config(
     page_title="AIoT Sensor Dashboard",
